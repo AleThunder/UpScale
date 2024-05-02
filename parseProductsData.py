@@ -115,7 +115,7 @@ def fetch_and_parse_from_file(file_path):
             all_data[url] = data
 
     except requests.exceptions.RequestException as e:
-        logging.error(f"Error fetching {url}: {str(e)}", exc_info=True)
+        logging.error(f" Error fetching {url}: {str(e)}", exc_info=True)
         all_data[url] = {"Error": str(e)}
     finally:
         session.close()
