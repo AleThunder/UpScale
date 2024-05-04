@@ -4,90 +4,6 @@ from openai import OpenAI
 from gpt_data import icp, description_prompt, h2_prompt, faq, faq_prompt, other_data_prompt, name_prompt, specifications_list, specifications_prompt
 import csv, logging
 
-description = '''<h2>Перукарское кресло HEKTOR BH-3208 для профессионалов</h2>
-<p>Откройте для себя превосходство и комфорт с перукарским креслом HEKTOR BH-3208 Black, которое является идеальным выбором для барбершопов в крупных и средних городах. Это кресло не только удобно и функционально, но и внешне привлекательно, что делает его отличным дополнением к стильному интерьеру вашего салона.</p>
-
-<p>Кресло HEKTOR BH-3208 сочетает в себе изысканный дизайн и высокое качество. Обивка изготовлена из премиальной экологической кожи, что обеспечивает легкость в уходе и долговечность. Идеально подходит для мастеров, стремящихся создать респектабельную и комфортную атмосферу для своих клиентов.</p>
-
-<p>Особенности кресла включают:</p>
-<ul>
-<li>Гидравлическое регулирование высоты для удобства и гибкости в работе;</li>
-<li>Регулируемая спинка и съемный подголовник, что позволяет адаптировать кресло для различных процедур;</li>
-<li>Элегантная хромированная основа, добавляющая изысканности.</li>
-<li>Качественная обивка из экологической кожи.</li>
-</ul>
-
-<p>Размеры кресла поддерживают высокое качество работы барберов:
-<ul>
-<li>ширина сиденья: 51 см;</li>
-<li>ширина сиденья с подлокотниками: 63 см;</li>
-<li>глубина сиденья: 48 см;</li>
-<li>высота спинки сиденья: 46 см;</li>
-<li>высота кресла регулируется от 52 до 66 см;</li>
-<li>диагональ основания: 60 см;</li>
-<li>вес кресла: 35 кг.</li>
-</ul></p>
-
-<p>Гарантия на кресло составляет 12 месяцев, подтверждая его надежность и долговечность. Характеристики и размеры кресла делают его одним из лучших выборов для профессионалов, которые ценят качество и комфорт как для себя, так и для своих клиентов.</p>
-
-<p>Выбор кресла HEKTOR BH-3208 Black станет залогом уверенности в качестве и профессионализме вашего барбершопа. Удобство, функциональность и стиль — три составляющие успешной работы и удовлетворенности клиентов. Приобретая это кресло, вы инвестируете не только в интерьер вашего салона, но и в удобство и положительные эмоции ваших клиентов.</p>
-<div itemscope itemtype="https://schema.org/FAQPage">
-    <div itemprop="mainEntity" itemscope itemtype="https://schema.org/Question">
-        <strong itemprop="name">Как приобрести парикмахерское кресло через ваш сайт?</strong>
-        <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
-            <div itemprop="text">
-                Для заказа кресла для вашего барбершопа воспользуйтесь функцией добавления в корзину на нашем сайте, позвоните по номеру в разделе контакты или начните диалог через онлайн-чат с нашими консультантами для получения помощи.
-            </div>
-        </div>
-    </div>
-    <div itemprop="mainEntity" itemscope itemtype="https://schema.org/Question">
-        <strong itemprop="name">Предоставляется ли гарантия на парикмахерское кресло?</strong>
-        <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
-            <div itemprop="text">
-                Каждое кресло для барбершопа сопровождается 12-месячной гарантией, подтверждающей его высокое качество и надежность.
-            </div>
-        </div>
-    </div>
-    <div itemprop="mainEntity" itemscope itemtype="https://schema.org/Question">
-        <strong itemprop="name">Является ли парикмахерское кресло Stig Black оригинальным продуктом?</strong>
-        <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
-            <div itemprop="text">
-                Да, мы предоставляем исключительно оригинальные кресла Stig Black, которые идут с подтверждением подлинности и гарантией от производителя.
-            </div>
-        </div>
-    </div>
-    <div itemprop="mainEntity" itemscope itemtype="https://schema.org/Question">
-        <strong itemprop="name">В чем различие между пневматическим и гидравлическим механизмами в креслах?</strong>
-        <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
-            <div itemprop="text">
-                Пневматический механизм кресла требует, чтобы клиент вставал для его регулирования, в то время как гидравлический механизм позволяет изменять высоту кресла без потребности подниматься клиенту, обеспечивая бесперебойность и удобство во время стрижки или других процедур.
-            </div>
-        </div>
-    </div>
-    <div itemprop="mainEntity" itemscope itemtype="https://schema.org/Question">
-        <strong itemprop="name">Предоставляете ли вы скидки при покупке множества кресел Stig Black?</strong>
-        <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
-            <div itemprop="text">
-                Да, мы предлагаем специальные скидки при покупке двух и более кресел Stig Black, а также при оформлении комплексного заказа.
-            </div>
-        </div>
-    </div>
-    <div itemprop="mainEntity" itemscope itemtype="https://schema.org/Question">
-        <strong itemprop="name">Как осуществлять уход за креслом Stig Black для продления его срока службы?</strong>
-        <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
-            <div itemprop="text">
-                Для обеспечения долговечности кресла Stig Black рекомендуется регулярно очищать его используя мягкие чистящие средства и избегать применения абразивных материалов, а также регулярно проверять все механизмы на предмет износа.
-            </div>
-        </div>
-    </div>
-    <div itemprop="mainEntity" itemscope itemtype="https://schema.org/Question">
-        <strong itemprop="name">Можно ли отрегулировать высоту подножки на кресле Stig Black?</strong>
-        <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
-            <div itemprop="text">
-                Да, подножка кресла Stig Black оснащена регулируемым механизмом, который позволяет настраивать ее высоту в соответствии с ростом и предпочтениями клиента.
-            </div
-'''
-
 logging.basicConfig(level=logging.ERROR)
 
 def get_description(description):
@@ -155,7 +71,7 @@ def dataFormat(products_data):
         h2 = get_h2(description)
         faq = get_faq(images[0])
         other = get_other(description)
-        print(get_specifications(description, raw_specifications))
+        specifications = get_specifications(description, raw_specifications)
         meta_title, meta_description, bullet_points = process_other_data(other)
         
         full_description = f'''{h2}\n{description}\n{faq}'''
@@ -168,12 +84,13 @@ def dataFormat(products_data):
             "BulletPoints": bullet_points,
             "Images": images,
             "Price": price,
-            "SKU": sku
+            "SKU": sku,
+            "Specifications": specifications
         })
 
     csv_file_path = 'files/products.csv'
 
-    fieldnames = ['Name', 'Description', 'MetaTitle', 'MetaDescription', 'BulletPoints', 'Images', 'Price', 'SKU']
+    fieldnames = ['Name', 'Description', 'MetaTitle', 'MetaDescription', 'BulletPoints', 'Images', 'Price', 'SKU', 'Specifications']
 
     with open(csv_file_path, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.DictWriter(file, fieldnames=fieldnames)
@@ -186,10 +103,8 @@ def process_other_data(other_data):
     sections = other_data.split('#')
 
     # Extract meta title by removing the prefix "Мета заголовок:\n"
-#    meta_title = sections[0].replace("Мета заголовок:", "").strip('"')
     meta_title = sections[0].replace(";", "").strip('"')
     # Extract meta description by removing the prefix "Мета описание:\n"
-#    meta_description = sections[1].replace("Мета описание:", "").strip('"')
     meta_description = sections[1].replace(";", "").strip('"')
     # Process bullet points
     bullet_points_raw = sections[2].replace("Список характеристик и особенностей:", "").strip('"')
@@ -201,19 +116,20 @@ def process_other_data(other_data):
     return meta_title, meta_description, bullet_points
 
 client = OpenAI(api_key=GPT_API)
-tag = "https://mixmol.com.ua/ua/p2060998074-parikmaherskoe-kreslo-olaf.html"
 products_data = fetch_parse_and_save()
-try:
-    specifications = products_data[tag]['specifications']
-    print(get_specifications(description, specifications))
-except Exception as e:
-    print(f'''
-{products_data}
-----------Error-----------
-{e}
-''')
-#
-#products_data = fetch_parse_and_save()
 #dataProducts = dataFormat(products_data)
-#
-#print(dataProducts)
+
+def testing(tag = "https://mixmol.com.ua/ua/p2060998074-parikmaherskoe-kreslo-olaf.html"):
+    #Підготовка даних з products_data необхідних для тестування get_specifications()
+    raw_description = products_data[tag]['description']
+    description = get_description(raw_description)
+    h2 = get_h2(description)
+    faq = get_faq(products_data[tag]['images'][0])
+    description = f'''{h2}\n{description}\n{faq}'''
+    #тест функціїї get_specifications для обробки та створення нових характеристик.   
+    raw_spec = products_data[tag]['specifications']
+    specif = get_specifications(description, raw_spec)
+    return(f'''Характеристики:
+{specif}''')
+
+print(testing())
