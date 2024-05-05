@@ -1,8 +1,8 @@
 from parseProductsData import fetch_parse_and_save
 from api_config import GPT_API
 from openai import OpenAI
-from gpt_data import icp, description_prompt, h2_prompt, faq, faq_prompt, other_data_prompt, name_prompt, specifications_list, specifications_prompt
-import csv, logging
+from gpt_data import icp, description_prompt, h2_prompt, faq, faq_prompt, other_data_prompt, name_prompt, specifications_prompt
+import json, csv, logging
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -39,9 +39,9 @@ def get_name(name):
 def get_specifications(description, specifications):
     user_prompt = f'''Описание товара: "{description}."
 Характеристики на украинском: {specifications}.
-Список необходимых характеристик: {specifications_list}.
+
 {specifications_prompt}.'''
-    system_prompt = '''Ты менеджер онлайн магазина, твоя задача собрать характеристику о товаре на основе имеющиеся информации и перевести на русский язык. В ответе не пиши ничего лишнего кроме результата работы в формате json, не пиши "```json
+    system_prompt = '''Ты менеджер онлайн магазина, твоя задача собрать характеристику о товаре на основе имеющиеся информации, перевести на русский язык, и заполнить список по примеру. В ответе не пиши ничего лишнего кроме результата работы в формате json, не пиши "```json
 ```"'''
     return(call_openai(system_prompt, user_prompt))
 
@@ -116,10 +116,10 @@ def process_other_data(other_data):
     return meta_title, meta_description, bullet_points
 
 client = OpenAI(api_key=GPT_API)
-products_data = fetch_parse_and_save()
+#products_data = fetch_parse_and_save()
 #dataProducts = dataFormat(products_data)
 
-def testing(tag = "https://mixmol.com.ua/ua/p2060998074-parikmaherskoe-kreslo-olaf.html"):
+def testing(tag = "https://mixmol.com.ua/ua/p2060998049-parikmaherskoe-kreslo-hektor.html"):
     #Підготовка даних з products_data необхідних для тестування get_specifications()
     raw_description = products_data[tag]['description']
     description = get_description(raw_description)
@@ -129,7 +129,17 @@ def testing(tag = "https://mixmol.com.ua/ua/p2060998074-parikmaherskoe-kreslo-ol
     #тест функціїї get_specifications для обробки та створення нових характеристик.   
     raw_spec = products_data[tag]['specifications']
     specif = get_specifications(description, raw_spec)
-    return(f'''Характеристики:
-{specif}''')
+    return(specif)
 
-print(testing())
+#attributes = testing()
+#print(attributes)
+#attributes = str(attributes)
+#print(attributes) #Waiting for string view like json with array
+#attributes = attributes.replace("'",'')
+#attributes = attributes.replace('    ','')
+#attributes = attributes.replace('        ','')
+#attributes = attributes.replace('\\n','')
+#print(attributes)
+#print(type(attributes))
+#json_object = json.loads(attributes)
+#print(type(json_object))
