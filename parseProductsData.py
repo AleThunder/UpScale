@@ -111,7 +111,7 @@ def fetch_and_parse_from_file(file_path):
                 "specifications": parse_specifications(soup),
                 "images": image_urls
             }
-            print(data['specifications'])
+            #print(data['specifications'])
             all_data[url] = data
 
     except requests.exceptions.RequestException as e:
