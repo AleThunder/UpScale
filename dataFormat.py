@@ -73,7 +73,8 @@ def dataFormat(products_data):
         other = get_other(description)
         specifications = get_specifications(description, raw_specifications)
         meta_title, meta_description, bullet_points = process_other_data(other)
-        
+        print(other)
+        print(bullet_points)
         full_description = f'''{h2}\n{description}\n{faq}'''
         
         csv_data.append({
@@ -107,17 +108,14 @@ def process_other_data(other_data):
     # Extract meta description by removing the prefix "Мета описание:\n"
     meta_description = sections[1].replace(";", "").strip('"')
     # Process bullet points
-    bullet_points_raw = sections[2].replace("Список характеристик и особенностей:", "").strip('"')
-    bullet_points_raw = sections[2].replace("\n-", "\n").strip('"')
-    bullet_points_lines = bullet_points_raw.split('\n')
-    bullet_points = '\n'.join(line for line in bullet_points_lines if ':' not in line)
+    bullet_points = sections[2]
 
     # Return the extracted values
     return meta_title, meta_description, bullet_points
 
 client = OpenAI(api_key=GPT_API)
-#products_data = fetch_parse_and_save()
-#dataProducts = dataFormat(products_data)
+products_data = fetch_parse_and_save()
+dataProducts = dataFormat(products_data)
 
 def testing(tag = "https://mixmol.com.ua/ua/p2060998049-parikmaherskoe-kreslo-hektor.html"):
     #Підготовка даних з products_data необхідних для тестування get_specifications()
