@@ -25,10 +25,13 @@ def parse_description(soup):
 def parse_specifications(soup):
     specifications = {}
     table = soup.find('table', class_='b-product-info')
-    for tr in table.find_all('tr'):
-        cells = tr.find_all('td')
-        if len(cells) == 2:
-            specifications[cells[0].get_text(strip=True)] = cells[1].get_text(strip=True)
+    if table:
+        for tr in table.find_all('tr'):
+            cells = tr.find_all('td')
+            if len(cells) == 2:
+                specifications[cells[0].get_text(strip=True)] = cells[1].get_text(strip=True)
+    else:
+        specifications["Тип підйомного механізму"] = "Гідравлічний"
     return specifications
 
 def extract_product_id(url):
@@ -97,7 +100,6 @@ def fetch_and_parse_from_file(file_path):
             response = session.get(url)
             response.raise_for_status()
             soup = BeautifulSoup(response.text, 'html.parser')
-
             product_id = extract_product_id(url)
             if product_id:
                 image_urls = fetch_product_images(product_id, session)
@@ -111,7 +113,6 @@ def fetch_and_parse_from_file(file_path):
                 "specifications": parse_specifications(soup),
                 "images": image_urls
             }
-            #print(data['specifications'])
             all_data[url] = data
 
     except requests.exceptions.RequestException as e:
@@ -145,6 +146,7 @@ def fetch_parse_and_save(file_path="files/url_list.txt", output_csv="files/outpu
     all_data = fetch_and_parse_from_file(file_path)
     # Save all the collected data to a CSV file
     save_data_to_csv(all_data, output_csv)
+    #print(all_data)
     return(all_data)
 
 if __name__ == "__main__":
