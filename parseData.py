@@ -6,22 +6,31 @@ from requests.packages.urllib3.util.retry import Retry
 
 logging.basicConfig(level=logging.ERROR)
 
+# Форматування ціни товару
 def clean_price(price_text):
     return re.sub(r'[^\d]+', '', price_text.split(',')[0])  # Видалити все, окрім цифр та крапки
+
 # Попередньо визначені функції парсингу
+
+#Функція використовує об'єкт BeautifulSoup для витягу назви продукту з HTML сторінки. 
+#Атрибут data-qaid="product_name" використовується як маркер для визначення місця назви в документі.
 def parse_name(soup):
     return soup.find(attrs={"data-qaid": "product_name"}).get_text(strip=True)
-
+    
+#Схожа на попередню функцію, але замість назви вона знаходить SKU (stock keeping unit) продукту.
 def parse_sku(soup):
     return soup.find(attrs={"data-qaid": "product_code"}).get_text(strip=True)
-
+    
+#Функція витягує текст ціни і передає його в функцію clean_price для форматування.
 def parse_price(soup):
     price_text = soup.find(attrs={"data-qaid": "product_price"}).get_text(strip=True)
     return clean_price(price_text)
 
+#
 def parse_description(soup):
     return str(soup.find(attrs={"data-qaid": "product_description"}))
 
+#Отримує опис продукту з HTML. Повертає опис у вигляді рядка.
 def parse_specifications(soup):
     specifications = {}
     table = soup.find('table', class_='b-product-info')
@@ -34,8 +43,9 @@ def parse_specifications(soup):
         specifications["Тип підйомного механізму"] = "Гідравлічний"
     return specifications
 
+#Витягує ідентифікатор продукту з URL, використовуючи структуру URL як ключ для визначення місця розташування ідентифікатора.
 def extract_product_id(url):
-    # Extract the product ID from the URL
+    # Дістаєм id товару по url
     prefix = "https://mixmol.com.ua/ua/p"
     suffix_position = url.find("-", len(prefix))
     if suffix_position != -1:
@@ -43,6 +53,7 @@ def extract_product_id(url):
         return product_id
     return None
 
+#Функція, яка використовує сесію з повторними спробами з'єднання для отримання зображень продуктів за допомогою GraphQL запиту.
 def fetch_product_images(product_id, session):
     """
     Fetch product images using a persistent session and caching.
@@ -74,6 +85,7 @@ def fetch_product_images(product_id, session):
         logging.error(f'Other error occurred: {err}')  # Other errors
     return []
 
+#Створює сесію з налаштованою політикою повторних спроб з'єднань для запитів HTTP, що допомагає управляти з'єднаннями при нестабільних мережах.
 def requests_retry_session(retries=3, backoff_factor=0.3, status_forcelist=(500, 502, 504), session=None):
     session = session or requests.Session()
     retry = Retry(
@@ -88,66 +100,44 @@ def requests_retry_session(retries=3, backoff_factor=0.3, status_forcelist=(500,
     session.mount('https://', adapter)
     return session
 
-# Основна функції парсингу та запису
-def fetch_and_parse_from_file(file_path):
+# Ця функція інтегрує всі вищеописані функції для отримання даних з конкретного URL. 
+#Вона обробляє можливі винятки та зберігає сесію до закриття.
+def parse_url(url):
     all_data = {}
-    with open(file_path, 'r') as f:
-        urls = f.read().splitlines()
     
     session = requests_retry_session()
     try:
-        for url in urls:
-            response = session.get(url)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, 'html.parser')
-            product_id = extract_product_id(url)
-            if product_id:
-                image_urls = fetch_product_images(product_id, session)
-            else:
-                image_urls = []
-            data = {
-                "name": parse_name(soup),
-                "sku": parse_sku(soup),
-                "price": parse_price(soup),
-                "description": parse_description(soup),
-                "specifications": parse_specifications(soup),
-                "images": image_urls
-            }
-            all_data[url] = data
+        response = session.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        product_id = extract_product_id(url)
+        if product_id:
+            image_urls = fetch_product_images(product_id, session)
+        else:
+            image_urls = []
+        data = {
+            "name": parse_name(soup),
+            "sku": parse_sku(soup),
+            "price": parse_price(soup),
+            "description": parse_description(soup),
+            "specifications": parse_specifications(soup),
+            "images": image_urls
+        }
 
     except requests.exceptions.RequestException as e:
         logging.error(f" Error fetching {url}: {str(e)}", exc_info=True)
-        all_data[url] = {"Error": str(e)}
+        data = {"Error": str(e)}
     finally:
         session.close()
 
-        return all_data
+        return data
 
-def save_data_to_csv(data, output_file):
-    # Determine the header based on keys of the first item in data
-    if data:
-        headers = list(data[next(iter(data))].keys())
-        with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
-            writer = csv.writer(csvfile)
-            # Write header
-            writer.writerow(["URL"] + headers)
-            # Write data rows
-            for url, attributes in data.items():
-                row = [url]
-                for header in headers:
-                    if header == "images" and isinstance(attributes.get(header), list):
-                        # Join image URLs into a single string separated by commas
-                        row.append(','.join(attributes.get(header)))
-                    else:
-                        row.append(attributes.get(header, ''))
-                writer.writerow(row)
+#Функція, яка викликає parse_url для конкретного URL і повертає результати.
+def parse(url):
+    data = parse_url(url)
+    return(data)
 
-def fetch_parse_and_save(file_path="files/url_list.txt", output_csv="files/output_data.csv"):
-    all_data = fetch_and_parse_from_file(file_path)
-    # Save all the collected data to a CSV file
-    save_data_to_csv(all_data, output_csv)
-    #print(all_data)
-    return(all_data)
-
-if __name__ == "__main__":
-    fetch_parse_and_save("files/url_list.txt", "files/output_data.csv")
+#Для запуску цього скрипта окремо від програми розкоментуйте наступний код та передайте url mixmol товару в функцію - parse(URL)
+#if __name__ == "__main__":
+#    test_data = parse('https://mixmol.com.ua/ua/p2060998049-parikmaherskoe-kreslo-hektor.html')
+#    print(test_data)
