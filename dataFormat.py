@@ -105,7 +105,7 @@ def dataFormat(product):
     
     csv_data['name'] = name
     csv_data['type'] = 'simple'
-    csv_data['status'] = 'draft'
+    #csv_data['status'] = 'draft'
     csv_data['categories'] = [{'id': 61}]
     csv_data["meta_data"] = meta_data
     csv_data["description"] = description
