@@ -246,7 +246,6 @@ class Director:
         self.builder.set_images(self.builder.data['images'])
         self.builder.set_categories()
         self.builder.set_type()
-        print(self.builder._product.body)
 
 
 def get_metadata(meta_title, meta_description):
