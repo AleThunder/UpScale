@@ -129,6 +129,9 @@ class Builder(ABC):
     @abstractmethod
     def set_type(self) -> None:
         pass
+    @abstractmethod
+    def set_status(self) -> None:
+        pass
 
 
 class ProductBuilder(Builder):
@@ -179,7 +182,8 @@ class ProductBuilder(Builder):
     def set_type(self, type="simple"):
         self._product.add(key='type', value=type)
 
-
+    def set_status(self, status="draft"):
+        self._product.add(key='status', value=status)
 class Product:
     def __init__(self) -> None:
         self.body = {}
@@ -246,6 +250,7 @@ class Director:
         self.builder.set_images(self.builder.data['images'])
         self.builder.set_categories()
         self.builder.set_type()
+        self.builder.set_status()
 
 
 def get_metadata(meta_title, meta_description):
