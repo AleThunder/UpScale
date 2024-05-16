@@ -36,6 +36,8 @@ processed_urls = load_processed_urls()
 
 #Цикл обробки для кожного URL
 for url in urls:
+    if url in processed_urls:
+        continue
     data = Parser(url).parse()
 
     director = Director()
