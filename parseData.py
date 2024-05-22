@@ -77,7 +77,7 @@ class Parser:
         return re.sub(r'\D+', '', price_text.split(',')[0])
 
     def parse_description(self):
-        return str(self.soup.find(attrs={"data-qaid": "product_description"}))
+        return str(self.soup.find(attrs={"data-qaid": "product_description"}).get_text(strip=True))
 
     def parse_specifications(self):
         specifications = {}

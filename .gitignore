@@ -167,3 +167,4 @@ testing
 files
 api_config.py
 gpt_data.py
+processed_urls.pkl
