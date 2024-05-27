@@ -1,7 +1,8 @@
 from parseData import Parser
 from dataFormat import Director, ProductBuilder, ClientGpt
+import asyncio
+import httpx
 import pickle
-
 
 data = {}
 header = ('\n ____              _________________              ____\n'
@@ -25,7 +26,7 @@ def load_processed_urls():
             return pickle.load(file)
     except FileNotFoundError:
         return []
-    
+
 
 # Відкриття файлу url_list.txt: Список URL-адрес, з яких потрібно здійснювати парсинг, зчитується з файлу.
 # Кожна URL-адреса зберігається у списку urls.
