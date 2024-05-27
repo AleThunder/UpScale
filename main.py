@@ -16,7 +16,7 @@ def draw():
 
 def save_processed_urls(processed_urls):
     with open("processed_urls.pkl", "wb") as file:
-        pickle.dump(processed_urls,file)
+        pickle.dump(processed_urls, file)
 
 
 def load_processed_urls():
@@ -27,14 +27,14 @@ def load_processed_urls():
         return []
     
 
-#Відкриття файлу url_list.txt: Список URL-адрес, з яких потрібно здійснювати парсинг, зчитується з файлу.
-#Кожна URL-адреса зберігається у списку urls.
+# Відкриття файлу url_list.txt: Список URL-адрес, з яких потрібно здійснювати парсинг, зчитується з файлу.
+# Кожна URL-адреса зберігається у списку urls.
 with open("files/url_list.txt", 'r') as f:
     urls = f.read().splitlines()
 
 processed_urls = load_processed_urls()
 
-#Цикл обробки для кожного URL
+# Цикл обробки для кожного URL
 for url in urls:
     if url in processed_urls:
         continue

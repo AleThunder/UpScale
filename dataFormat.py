@@ -6,6 +6,7 @@ from api_config import GPT_API, get_wc_api
 from gpt_data import PromptData
 import json
 import logging
+import re
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -28,7 +29,7 @@ class CallMethods:
     def get_description(self):
         user_prompt = f"{PromptData.icp} {PromptData.description_prompt} {self._description}"
         system_prompt = '''Ты Front-end специалист топ уровня, твоя задача редактирование описания товаров в формате html. Ти внимателено относишся к структуре DOM и следуешь стандартам разметки. В ответе не пиши ничего лишнего кроме результата работы в формате html!. Не пиши "```html" в ответе, ответ должен быть на русском языке!.'''
-        return self.call(system_prompt, user_prompt)
+        return re.sub('\n', '', self.call(system_prompt, user_prompt))
 
     def get_h2(self):
         user_prompt = f'''Описание "{self._description}" {PromptData.h2_prompt}'''
@@ -41,7 +42,7 @@ class CallMethods:
     Зображення товару: {self._images[0]}
     {PromptData.faq_prompt}'''
         system_prompt = '''Ты Front-end специалист топ уровня, твоя задача редактирование описания товаров в формате html. Ти внимателено относишся к структуре DOM, количеству символов и следуешь стандартам разметки. В ответе не пиши ничего лишнего кроме результата работы в формате html. Не пиши "```html" в ответе, ответ должен быть на русском языке!'''
-        return self.call(system_prompt, user_prompt)
+        return re.sub('\n', '', self.call(system_prompt, user_prompt))
 
     def get_other(self):
         user_prompt: str = f'''Описание: {self._description}
@@ -237,7 +238,7 @@ class Director:
 
     def build_product(self) -> None:
         name, description, h2, faq, other, attributes = self._gpt.generate()
-        description = f'''{h2}\n{description}\n{faq}'''
+        description = f'''{h2}{description}{faq}'''
         meta_title, meta_description, short_description = process_other_data(other)
         meta_data = get_metadata(meta_title, meta_description)
         self.builder.set_name(name)
