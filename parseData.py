@@ -2,7 +2,7 @@ import logging
 import re
 import json
 from bs4 import BeautifulSoup
-import asyncio
+import httpx
 from retry_client import RetryClient  # Імпорт власного клієнта з повторними спробами
 
 logging.basicConfig(level=logging.ERROR)
@@ -12,11 +12,19 @@ class Parser:
     url = ""
 
     def __init__(self, url):
+        self.soup = None
         self.url = url
         self.client = RetryClient()
-        self.soup = BeautifulSoup(self.session.get(self.url).text, 'html.parser')
-        self.product_id = self.eject_id()
         self.data = {}
+
+    async def fetch(self, url, method='GET', headers=None, data=None):
+        try:
+            response = await self.client.request(method, url, headers=headers, json=data)
+            response.raise_for_status()
+            return response.text
+        except httpx.HTTPStatusError as e:
+            logging.error(f"HTTP error occurred: {e}")
+            return None
 
     async def eject_id(self):
         img_url = self.url.find("-", len("https://mixmol.com.ua/ua/p"))
@@ -30,7 +38,7 @@ class Parser:
         }
         body = {
             "operationName": "productImagesQuery",
-            "variables": {"productId": int(self.product_id)},
+            "variables": {"productId": int(await self.eject_id())},
             "query": """
                 query productImagesQuery($productId: Int!) {
                     product(id: $productId) {

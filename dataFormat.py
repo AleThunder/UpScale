@@ -1,12 +1,13 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Text
-from openai import OpenAI
-from api_config import GPT_API, get_wc_api
-from gpt_data import PromptData
+from openai import AsyncOpenAI
 import json
 import logging
 import re
+
+from api_config import GPT_API, get_wc_api
+from gpt_data import PromptData
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -20,50 +21,50 @@ class CallMethods:
         self._specifications = ["specifications"]
         self.call = call
 
-    def get_name(self):
+    async def get_name(self):
         user_prompt = f'''Название на украинском: "{self._name}"
     {PromptData.name_prompt}'''
         system_prompt = '''Ты переводчик текста топ уровня, твоя задача переводить текст для товаров на русский якзык. В ответе не пиши ничего лишнего кроме результата работы'''
-        return self.call(system_prompt, user_prompt)
+        return await self.call(system_prompt, user_prompt)
 
-    def get_description(self):
+    async def get_description(self):
         user_prompt = f"{PromptData.icp} {PromptData.description_prompt} {self._description}"
         system_prompt = '''Ты Front-end специалист топ уровня, твоя задача редактирование описания товаров в формате html. Ти внимателено относишся к структуре DOM и следуешь стандартам разметки. В ответе не пиши ничего лишнего кроме результата работы в формате html!. Не пиши "```html" в ответе, ответ должен быть на русском языке!.'''
-        return re.sub('\n', '', self.call(system_prompt, user_prompt))
+        return re.sub('\n', '', await self.call(system_prompt, user_prompt))
 
-    def get_h2(self):
+    async def get_h2(self):
         user_prompt = f'''Описание "{self._description}" {PromptData.h2_prompt}'''
         system_prompt = '''Ты Front-end специалист топ уровня, твоя задача редактирование описания товаров в формате html. Ти внимателено относишся к структуре DOM, количеству символов и следуешь стандартам разметки. В ответе не пиши ничего лишнего кроме результата работы в формате html. Не пиши "```html" в ответе, ответ должен быть на русском языке!'''
-        return self.call(system_prompt, user_prompt)
+        return await self.call(system_prompt, user_prompt)
 
-    def get_faq(self):
+    async def get_faq(self):
         user_prompt = f'''{PromptData.icp}
     {PromptData.faq}
     Зображення товару: {self._images[0]}
     {PromptData.faq_prompt}'''
         system_prompt = '''Ты Front-end специалист топ уровня, твоя задача редактирование описания товаров в формате html. Ти внимателено относишся к структуре DOM, количеству символов и следуешь стандартам разметки. В ответе не пиши ничего лишнего кроме результата работы в формате html. Не пиши "```html" в ответе, ответ должен быть на русском языке!'''
-        return re.sub('\n', '', self.call(system_prompt, user_prompt))
+        return re.sub('\n', '', await self.call(system_prompt, user_prompt))
 
-    def get_other(self):
+    async def get_other(self):
         user_prompt: str = f'''Описание: {self._description}
     {PromptData.other_data_prompt}'''
         system_prompt = '''Ты SEO специалист топ уровня, твоя задача писать продающий SEO оптимизированый текст для товаров. Ти внимателено относишся к количеству символов и следуешь стандартам SEO. В ответе не пиши ничего лишнего кроме результата работы он должен быть прагматичным и содержательным, и не должен звучать как реклама, ответ должен быть исключительно на русском языке'''
-        return self.call(system_prompt, user_prompt)
+        return await self.call(system_prompt, user_prompt)
 
-    def get_specifications(self):
+    async def get_specifications(self):
         user_prompt = f'Описание товара: "{self._description}."\nХарактеристики на украинском: {self._specifications}.\nФото товара: {self._images[0]}\n{PromptData.specifications_prompt}.'
         system_prompt = '''Ты менеджер онлайн магазина, твоя задача собрать характеристику о товаре на основе имеющиеся информации, перевести на русский язык, и заполнить список по примеру. В ответе не пиши ничего лишнего кроме результата работы в формате json, не пиши "```json```"'''
-        return self.call(system_prompt, user_prompt)
+        return await self.call(system_prompt, user_prompt)
 
 
 class ClientGpt:
     def __init__(self, data):
         self.methods = CallMethods(data, self.call)
-        self._client = OpenAI(api_key=GPT_API)
+        self._client = AsyncOpenAI(api_key=GPT_API)
 
-    def call(self, system_prompt, user_prompt):
+    async def call(self, system_prompt, user_prompt):
         try:
-            completion = self._client.chat.completions.create(
+            completion = await self._client.chat.completions.create(
                 model="gpt-4o",
                 messages=[{"role": "system", "content": system_prompt},
                           {"role": "user", "content": user_prompt}]
@@ -74,13 +75,13 @@ class ClientGpt:
             logging.error(f"API call failed: {e}")
             return None
 
-    def generate(self):
-        name = self.methods.get_name()
-        description = self.methods.get_description()
-        h2 = self.methods.get_h2()
-        faq = self.methods.get_faq()
-        other = self.methods.get_other()
-        attributes = self.methods.get_specifications()
+    async def generate(self):
+        name = await self.methods.get_name()
+        description = await self.methods.get_description()
+        h2 = await self.methods.get_h2()
+        faq = await self.methods.get_faq()
+        other = await self.methods.get_other()
+        attributes = await self.methods.get_specifications()
         return name, description, h2, faq, other, attributes
 
 
@@ -130,6 +131,7 @@ class Builder(ABC):
     @abstractmethod
     def set_type(self) -> None:
         pass
+
     @abstractmethod
     def set_status(self) -> None:
         pass
@@ -185,6 +187,8 @@ class ProductBuilder(Builder):
 
     def set_status(self, status="draft"):
         self._product.add(key='status', value=status)
+
+
 class Product:
     def __init__(self) -> None:
         self.body = {}
@@ -236,8 +240,8 @@ class Director:
     def gpt(self, gpt: ClientGpt) -> None:
         self._gpt = gpt
 
-    def build_product(self) -> None:
-        name, description, h2, faq, other, attributes = self._gpt.generate()
+    async def build_product(self) -> None:
+        name, description, h2, faq, other, attributes = await self._gpt.generate()
         description = f'''{h2}{description}{faq}'''
         meta_title, meta_description, short_description = process_other_data(other)
         meta_data = get_metadata(meta_title, meta_description)
