@@ -29,7 +29,7 @@ class CallMethods:
 
     async def get_description(self):
         user_prompt = f"{PromptData.icp} {PromptData.description_prompt} {self._description}"
-        system_prompt = '''Ты Front-end специалист топ уровня, твоя задача редактирование описания товаров в формате html. Ти внимателено относишся к структуре DOM и следуешь стандартам разметки. В ответе не пиши ничего лишнего кроме результата работы в формате html!. Не пиши "```html" в ответе, ответ должен быть на русском языке!.'''
+        system_prompt = '''Ты Front-end специалист топ уровня, твоя задача редактирование описания товаров в формате html. Ты внимательно относишься к структуре DOM и следуешь стандартам разметки. В ответе не пиши ничего лишнего кроме результата работы в формате html!. Не пиши "```html" в ответе, ответ должен быть на русском языке!.'''
         return re.sub('\n', '', await self.call(system_prompt, user_prompt))
 
     async def get_h2(self):
@@ -39,9 +39,9 @@ class CallMethods:
 
     async def get_faq(self):
         user_prompt = f'''{PromptData.icp}
-    {PromptData.faq}
-    Зображення товару: {self._images[0]}
-    {PromptData.faq_prompt}'''
+    Информация о товаре: {self._description}
+    {PromptData.faq_prompt}
+    {PromptData.faq}'''
         system_prompt = '''Ты Front-end специалист топ уровня, твоя задача редактирование описания товаров в формате html. Ти внимателено относишся к структуре DOM, количеству символов и следуешь стандартам разметки. В ответе не пиши ничего лишнего кроме результата работы в формате html. Не пиши "```html" в ответе, ответ должен быть на русском языке!'''
         return re.sub('\n', '', await self.call(system_prompt, user_prompt))
 
@@ -242,7 +242,7 @@ class Director:
 
     async def build_product(self) -> None:
         name, description, h2, faq, other, attributes = await self._gpt.generate()
-        description = f'''{h2}{description}{faq}'''
+        description = f'''{h2}{description}<h3>Часто задаваемые вопросы</h3>{faq}'''
         meta_title, meta_description, short_description = process_other_data(other)
         meta_data = get_metadata(meta_title, meta_description)
         self.builder.set_name(name)
