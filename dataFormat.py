@@ -15,7 +15,6 @@ logging.basicConfig(level=logging.ERROR)
 class CallMethods:
     def __init__(self, data, call):
         self._name = data["name"]
-        self._sku = data["sku"]
         self._description = data["description"]
         self._images = data["images"]
         self._specifications = ["specifications"]

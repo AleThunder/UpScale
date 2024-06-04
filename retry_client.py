@@ -1,6 +1,6 @@
 import httpx
 import asyncio
-from httpx import Response, RequestError, HTTPStatusError
+from httpx import RequestError, HTTPStatusError
 
 
 class RetryClient:
