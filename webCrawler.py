@@ -1,9 +1,10 @@
 import logging
-import httpx
 from abc import ABC, abstractmethod
-from bs4 import BeautifulSoup
-from retry_client import RetryClient  # Імпорт власного клієнта з повторними спробами
 
+import httpx
+from bs4 import BeautifulSoup
+
+from retry_client import RetryClient  # Імпорт власного клієнта з повторними спробами
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -17,7 +18,7 @@ class ImageParsingStrategy(ABC):
     async def eject_id(url):
         img_url = url.find("-", len("https://mixmol.com.ua/ua/p"))
         if img_url != -1:
-            return url[len("https://mixmol.com.ua/ua/p"):img_url]
+            return url[len("https://mixmol.com.ua/ua/p") : img_url]
 
 
 class CssImageParsingStrategy(ImageParsingStrategy):
@@ -40,7 +41,7 @@ class GraphQLImageParsingStrategy(ImageParsingStrategy):
                                 viewImages: images(width: 640, height: 640)
                             }
                         }
-                    """
+                    """,
         }
 
 
@@ -49,9 +50,13 @@ class Parser:
         self.image_strategy = image_strategy
         self.client = RetryClient()
 
-    async def fetch_page(self, url=None, method='GET', headers=None, data=None) -> str | None:
+    async def fetch_page(
+        self, url=None, method="GET", headers=None, data=None
+    ) -> str | None:
         try:
-            response = await self.client.request(method, url, headers=headers, json=data)
+            response = await self.client.request(
+                method, url, headers=headers, json=data
+            )
             response.raise_for_status()
             return response.text
         except httpx.HTTPStatusError as e:
@@ -65,14 +70,14 @@ class Parser:
 
     async def parse(self, url, selectors):
         page_content = await self.fetch_page(url)
-        soup = BeautifulSoup(page_content, 'html.parser')
+        soup = BeautifulSoup(page_content, "html.parser")
 
         parsed_data = {
-            'name': self.get_element(soup, selectors.get('name')),
-            'sku': self.get_element(soup, selectors.get('sku')),
-            'price': self.get_element(soup, selectors.get('price')),
-            'description': self.get_element(soup, selectors.get('description')),
-            'specification': self.get_element(soup, selectors.get('specification'))
+            "raw_name": self.get_element(soup, selectors.get("name")),
+            "sku": self.get_element(soup, selectors.get("sku")),
+            "price": self.get_element(soup, selectors.get("price")),
+            "raw_description": self.get_element(soup, selectors.get("description")),
+            "raw_specification": self.get_element(soup, selectors.get("specification")),
         }
 
         return parsed_data

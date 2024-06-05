@@ -1,5 +1,6 @@
-import httpx
 import asyncio
+
+import httpx
 from httpx import RequestError, HTTPStatusError
 
 
@@ -17,11 +18,11 @@ class RetryClient:
                 if response.status_code not in self.status_forcelist:
                     return response
                 response.raise_for_status()
-            except (RequestError, HTTPStatusError) as e:
+            except (RequestError, HTTPStatusError):
                 if attempt == self.retries - 1:
                     raise
                 else:
-                    backoff_time = self.backoff_factor * (2 ** attempt)
+                    backoff_time = self.backoff_factor * (2**attempt)
                     await asyncio.sleep(backoff_time)
                     continue
 
@@ -34,6 +35,7 @@ class RetryClient:
     async def close(self):
         await self.client.aclose()
 
+
 # Приклад використання
 
 # async def main():
@@ -43,6 +45,6 @@ class RetryClient:
 #         print(response.text)
 #     finally:
 #         await retry_client.close()
-# 
-# 
+#
+#
 # asyncio.run(main())
