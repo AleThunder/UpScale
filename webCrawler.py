@@ -1,4 +1,5 @@
 import logging
+import re
 from abc import ABC, abstractmethod
 
 import httpx
@@ -22,19 +23,19 @@ class ImageParsingStrategy(ABC):
 
 
 class CssImageParsingStrategy(ImageParsingStrategy):
-    async def fetch_images(self, url):
+    async def fetch_images(self, url=None, product_id=None, domain=None):
         # Реалізація завантаження сторінки та парсингу зображень за допомогою CSS селекторів
         pass
 
 
 class GraphQLImageParsingStrategy(ImageParsingStrategy):
-    async def fetch_images(self, url):
+    async def fetch_images(self, url=None, product_id=None, domain=None):
         headers = {
             "Content-Type": "application/json",
         }
         body = {
             "operationName": "productImagesQuery",
-            "variables": {"productId": int(await self.eject_id(url))},
+            "variables": {"productId": int(product_id)},
             "query": """
                         query productImagesQuery($productId: Int!) {
                             product(id: $productId) {
@@ -43,11 +44,29 @@ class GraphQLImageParsingStrategy(ImageParsingStrategy):
                         }
                     """,
         }
+        try:
+            async with httpx.AsyncClient() as client:
+                images = []
+                response = await client.post(
+                    f"https://{domain}/graphql", headers=headers, json=body
+                )
+                response.raise_for_status()
+                data = response.json()
+                for image in data["data"]["product"]["viewImages"]:
+                    images.append(image["url"])
+                return images
+        except httpx.HTTPStatusError as e:
+            logging.error(f"HTTP error occurred: {e}")
+            return []
 
 
 class Parser:
-    def __init__(self, image_strategy: ImageParsingStrategy):
+    def __init__(self, url, selectors, image_strategy, p_id, domain):
+        self.domain = domain
+        self.url = url
+        self.selectors = selectors
         self.image_strategy = image_strategy
+        self.p_id = p_id
         self.client = RetryClient()
 
     async def fetch_page(
@@ -66,18 +85,42 @@ class Parser:
     @staticmethod
     async def get_element(soup, selector):
         element = soup.select_one(selector)
-        return element.get_text(strip=True) if element else None
+        return element.get_text(strip=True) if element else "0"
 
-    async def parse(self, url, selectors):
-        page_content = await self.fetch_page(url)
+    @staticmethod
+    async def get_specifications(soup, selector):
+        specifications = {}
+        elements = soup.select(selector)
+        if elements:
+            for element in elements:
+                cells = element.find_all("td")
+                specifications[cells[0].get_text(strip=True)] = cells[1].get_text(
+                    strip=True
+                )
+        else:
+            specifications["Подъёмный механизм"] = "Гидравлический"
+        return specifications
+
+    async def parse(self):
+        page_content = await self.fetch_page(self.url)
+        if not page_content:
+            return {}
+
         soup = BeautifulSoup(page_content, "html.parser")
-
+        price = await self.get_element(soup, self.selectors.get("price"))
         parsed_data = {
-            "raw_name": self.get_element(soup, selectors.get("name")),
-            "sku": self.get_element(soup, selectors.get("sku")),
-            "price": self.get_element(soup, selectors.get("price")),
-            "raw_description": self.get_element(soup, selectors.get("description")),
-            "raw_specification": self.get_element(soup, selectors.get("specification")),
+            "name": await self.get_element(soup, self.selectors.get("name")),
+            "sku": await self.get_element(soup, self.selectors.get("sku")),
+            "price": re.sub(r"\D+", "", price),
+            "description": await self.get_element(
+                soup, self.selectors.get("description")
+            ),
+            "specification": await self.get_specifications(
+                soup, self.selectors.get("specification")
+            ),
+            "images": await self.image_strategy.fetch_images(
+                url=self.url, product_id=self.p_id, domain=self.domain
+            ),
         }
 
         return parsed_data

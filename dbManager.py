@@ -14,13 +14,13 @@ class Source(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)  # 3
     domain = Column(String, nullable=False)  # velmi.ua
     graphql = Column(Boolean, default=False)  # true
-    selectors_id = Column(Integer, ForeignKey("selectors.id"))  # 1
+    selectors_id = Column(Integer, ForeignKey("selectors.group_id"))  # 1
 
 
 class Selector(Base):
     __tablename__ = "selectors"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    source_id = Column(Integer, ForeignKey("sources.id"), nullable=False)
+    group_id = Column(Integer, nullable=False)
     element_type = Column(String, nullable=False)  # 'name', 'sku', etc.
     css = Column(String, nullable=False)
 
@@ -42,12 +42,12 @@ class Input(Base):
 class Result(Base):
     __tablename__ = "results"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    sku = Column(String, nullable=False)
-    price = Column(Integer, nullable=False)
+    sku = Column(String, nullable=True)
+    price = Column(Integer, nullable=True)
     images = Column(Text, nullable=True)  # Consider storing JSON as string
     type = Column(String, nullable=False)
     status = Column(String, nullable=False)
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=True)
     description = Column(String, nullable=True)
     short_description = Column(String, nullable=True)
     meta_data = Column(String, nullable=True)
@@ -68,9 +68,9 @@ class DatabaseManager:
         return session_local()
 
     @staticmethod
-    def get_selectors_for_domain(session, source_id):
-        selectors = session.query(Selector).filter_by(source_id=source_id).all()
-        return {selector.element_type: selector.selector for selector in selectors}
+    def get_selectors_for_domain(session, selectors_id):
+        selectors = session.query(Selector).filter_by(group_id=selectors_id).all()
+        return {selector.element_type: selector.css for selector in selectors}
 
     @staticmethod
     def get_image_strategy_for_domain(session, source_id):

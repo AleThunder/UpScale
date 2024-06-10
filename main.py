@@ -2,12 +2,13 @@ import asyncio
 import re
 from urllib.parse import urlparse
 
-from dataFormat import Director, ProductBuilder, ClientGpt
-from dbManager import Source, Input, DatabaseManager
+from dbManager import Source, Input, Selector, DatabaseManager
 from webCrawler import Parser
 
-CONCURRENT_LIMIT = 5
+CONCURRENT_LIMIT = 1
 INPUT_FILE_NAME = "url.txt"
+P_TYPE = "simple"
+P_STATUS = "draft"
 
 
 class URLProcessor:
@@ -20,7 +21,7 @@ class URLProcessor:
         parts = line.split("|")
         url = parts[0]
         product_id_match = re.search(r"/p(\d+)", url)
-        product_id = f"p{product_id_match.group(1)}" if product_id_match else None
+        product_id = f"{product_id_match.group(1)}" if product_id_match else None
         brand = parts[1]
         domain = urlparse(url).netloc
         graphql = (
@@ -35,17 +36,45 @@ class URLProcessor:
                 url, product_id, brand, domain, graphql, selectors_id = self.parse_line(
                     line
                 )
-                new_source = Source(
-                    domain=domain, graphql=graphql, selectors_id=selectors_id
-                )
-                self.session.add(new_source)
-                self.session.commit()  # Save to get the new_source.id
 
-                new_input = Input(
-                    url=url, p_id=product_id, brand=brand, source_id=new_source.id
+                existing_source = (
+                    self.session.query(Source).filter_by(domain=domain).first()
                 )
-                self.session.add(new_input)
+                if not existing_source:
+                    new_source = Source(
+                        domain=domain, graphql=graphql, selectors_id=selectors_id
+                    )
+                    self.session.add(new_source)
+                    self.session.commit()
+                else:
+                    new_source = existing_source
+
+                existing_input = self.session.query(Input).filter_by(url=url).first()
+                if not existing_input:
+                    new_input = Input(
+                        url=url, p_id=product_id, brand=brand, source_id=new_source.id
+                    )
+                    self.session.add(new_input)
             self.session.commit()
+
+
+class SelectorProcessor:
+    def __init__(self, session):
+        self.session = session
+
+    def add_selectors_to_db(self):
+        group_id = input("Введіть id групи селекторів: ").strip()
+        element_type = input(
+            "Введіть тип елементу (наприклад, 'name', 'sku'): "
+        ).strip()
+        css_selector = input("Введіть CSS селектор: ").strip()
+
+        new_selector = Selector(
+            group_id=group_id, element_type=element_type, css=css_selector
+        )
+        self.session.add(new_selector)
+        self.session.commit()
+        print(f"Селектор '{element_type}' для групи '{group_id}' успішно доданий.")
 
 
 class AsyncProcessor:
@@ -53,37 +82,47 @@ class AsyncProcessor:
         self.session = session
         self.concurrent_limit = concurrent_limit
 
-    async def process_url(self, input_url, semaphore):
+    async def process_url(self, input_item, semaphore):
         async with semaphore:
-            selectors = DatabaseManager.get_selectors_for_domain(
-                self.session, input_url.source_id
-            )
             image_strategy = DatabaseManager.get_image_strategy_for_domain(
-                self.session, input_url.source_id
+                self.session, input_item.source_id
+            )
+            source = (
+                self.session.query(Source).filter_by(id=input_item.source_id).first()
+            )
+            selectors = DatabaseManager.get_selectors_for_domain(
+                self.session, source.selectors_id
             )
 
-            parser = Parser(image_strategy)
-            parsed_data = await parser.parse(input_url.url, selectors)
+            parser = Parser(
+                input_item.url,
+                selectors,
+                image_strategy,
+                input_item.p_id,
+                source.domain,
+            )
+            parsed_data = await parser.parse()
+            print(parsed_data)
 
-            director = Director()
-            gpt = ClientGpt(parsed_data)
-            builder = ProductBuilder(parsed_data)
-
-            director.gpt = gpt
-            director.builder = builder
-
-            await director.build_product()
-            product = builder.product
-
-        print(product.body)
+            # director = Director()
+            # gpt = ClientGpt(parsed_data)
+            # builder = ProductBuilder(parsed_data)
+            #
+            # director.gpt = gpt
+            # director.builder = builder
+            #
+            # await director.build_product()
+            # product = builder.product
+            #
+            # print(product.body)
 
     async def process_urls(self):
-        input_urls = self.session.query(Input).filter_by(status=False).all()
+        inputs = self.session.query(Input).filter_by(status=False).all()
         semaphore = asyncio.Semaphore(self.concurrent_limit)
         tasks = []
 
-        for input_url in input_urls:
-            tasks.append(self.process_url(input_url, semaphore))
+        for input_item in inputs:
+            tasks.append(self.process_url(input_item, semaphore))
 
         await asyncio.gather(*tasks)
 
@@ -97,11 +136,25 @@ class MainApp:
         DatabaseManager.initialize_database()
         session = DatabaseManager.get_session()
 
-        url_processor = URLProcessor(session, self.input_file_name)
-        url_processor.load_urls_to_db()
+        action = (
+            input(
+                "Введіть дію ('read' для зчитування даних з файлу та додавання до БД, 'start' для запуску обробки URL, 'add_selector' для додавання селектора в БД): "
+            )
+            .strip()
+            .lower()
+        )
 
-        async_processor = AsyncProcessor(session, self.concurrent_limit)
-        asyncio.run(async_processor.process_urls())
+        if action == "read":
+            url_processor = URLProcessor(session, self.input_file_name)
+            url_processor.load_urls_to_db()
+        elif action == "start":
+            async_processor = AsyncProcessor(session, self.concurrent_limit)
+            asyncio.run(async_processor.process_urls())
+        elif action == "add_selector":
+            selector_processor = SelectorProcessor(session)
+            selector_processor.add_selectors_to_db()
+        else:
+            print("Невідома дія. Будь ласка, введіть 'read' або 'start'.")
 
 
 if __name__ == "__main__":

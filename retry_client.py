@@ -9,12 +9,14 @@ class RetryClient:
         self.retries = retries
         self.backoff_factor = backoff_factor
         self.status_forcelist = status_forcelist
-        self.client = httpx.AsyncClient()
+        self.client = httpx.AsyncClient(follow_redirects=True)
 
-    async def request(self, method, url, **kwargs):
+    async def request(self, method, url, headers=None, json=None, **kwargs):
         for attempt in range(self.retries):
             try:
-                response = await self.client.request(method, url, **kwargs)
+                response = await self.client.request(
+                    method, url, headers=headers, json=json, **kwargs
+                )
                 if response.status_code not in self.status_forcelist:
                     return response
                 response.raise_for_status()
