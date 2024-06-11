@@ -2,6 +2,7 @@ import asyncio
 import re
 from urllib.parse import urlparse
 
+from dataFormat import Director, ClientGpt, ProductBuilder
 from dbManager import Source, Input, Selector, DatabaseManager
 from webCrawler import Parser
 
@@ -104,17 +105,17 @@ class AsyncProcessor:
             parsed_data = await parser.parse()
             print(parsed_data)
 
-            # director = Director()
-            # gpt = ClientGpt(parsed_data)
-            # builder = ProductBuilder(parsed_data)
-            #
-            # director.gpt = gpt
-            # director.builder = builder
-            #
-            # await director.build_product()
-            # product = builder.product
-            #
-            # print(product.body)
+            director = Director()
+            gpt = ClientGpt(parsed_data)
+            builder = ProductBuilder(parsed_data)
+
+            director.gpt = gpt
+            director.builder = builder
+
+            await director.build_product()
+            product = builder.product
+
+            print(product.body)
 
     async def process_urls(self):
         inputs = self.session.query(Input).filter_by(status=False).all()
