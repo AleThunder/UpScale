@@ -15,12 +15,6 @@ class ImageParsingStrategy(ABC):
     async def fetch_images(self, url):
         pass
 
-    @staticmethod
-    async def eject_id(url):
-        img_url = url.find("-", len("https://mixmol.com.ua/ua/p"))
-        if img_url != -1:
-            return url[len("https://mixmol.com.ua/ua/p") : img_url]
-
 
 class CssImageParsingStrategy(ImageParsingStrategy):
     async def fetch_images(self, url=None, product_id=None, domain=None):
