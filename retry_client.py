@@ -1,6 +1,6 @@
 import httpx
 import asyncio
-from httpx import Response, RequestError, HTTPStatusError
+from httpx import RequestError, HTTPStatusError
 
 
 class RetryClient:
@@ -8,7 +8,7 @@ class RetryClient:
         self.retries = retries
         self.backoff_factor = backoff_factor
         self.status_forcelist = status_forcelist
-        self.client = httpx.AsyncClient()
+        self.client = httpx.AsyncClient(follow_redirects=True)
 
     async def request(self, method, url, **kwargs):
         for attempt in range(self.retries):
@@ -17,7 +17,7 @@ class RetryClient:
                 if response.status_code not in self.status_forcelist:
                     return response
                 response.raise_for_status()
-            except (RequestError, HTTPStatusError) as e:
+            except (RequestError, HTTPStatusError):
                 if attempt == self.retries - 1:
                     raise
                 else:

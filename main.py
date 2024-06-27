@@ -3,7 +3,8 @@ from parseData import Parser
 from dataFormat import Director, ProductBuilder, ClientGpt
 import pickle
 
-data = {}
+MAX_TASKS = 5  # або встановіть бажану кількість
+FILE_NAME = "files/markson-mebli_2.txt"
 
 
 async def save_processed_urls(processed_urls):
@@ -19,6 +20,7 @@ async def load_processed_urls():
         return []
 
 
+# noinspection PyCompatibility
 async def process_url(url, semaphore, processed_urls):
     async with semaphore:
         parser = Parser(url)
@@ -34,13 +36,14 @@ async def process_url(url, semaphore, processed_urls):
         await director.build_product()
         product = builder.product
 
-        print(product.body)
-        processed_urls.append(url)
-        await save_processed_urls(processed_urls)
+        product.post()
+        print(product.body["name"])
+        # processed_urls.append(url)
+        # await save_processed_urls(processed_urls)
 
 
 async def main(max_concurrent):
-    with open("files/url_list.txt", 'r') as f:
+    with open(FILE_NAME, 'r') as f:
         urls = f.read().splitlines()
 
     processed_urls = await load_processed_urls()
@@ -49,6 +52,6 @@ async def main(max_concurrent):
     tasks = [process_url(url, semaphore, processed_urls) for url in urls if url not in processed_urls]
     await asyncio.gather(*tasks)
 
+
 if __name__ == "__main__":
-    max_concurrent_tasks = 5  # або встановіть бажану кількість
-    asyncio.run(main(max_concurrent_tasks))
+    asyncio.run(main(MAX_TASKS))
