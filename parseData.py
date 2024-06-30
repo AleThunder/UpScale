@@ -27,12 +27,12 @@ class Parser:
             return None
 
     async def eject_id(self):
-        img_url = self.url.find("-", len("https://markson-mebli.com.ua/p"))
+        img_url = self.url.find("-", len("https://velmi.ua/p"))
         if img_url != -1:
-            return self.url[len("https://markson-mebli.com.ua/p"):img_url]
+            return self.url[len("https://velmi.ua/p"):img_url]
 
     async def fetch_images_url(self):
-        img_url = "https://markson-mebli.com.ua/graphql"
+        img_url = "https://velmi.ua/graphql"
         headers = {
             "Content-Type": "application/json",
         }

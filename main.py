@@ -1,10 +1,14 @@
 import asyncio
+import csv
+
+import aiofiles
+
 from parseData import Parser
 from dataFormat import Director, ProductBuilder, ClientGpt
 import pickle
 
 MAX_TASKS = 5  # або встановіть бажану кількість
-FILE_NAME = "files/markson-mebli_2.txt"
+FILE_NAME = "files/velmi_3.txt"
 
 
 async def save_processed_urls(processed_urls):
@@ -20,8 +24,13 @@ async def load_processed_urls():
         return []
 
 
-# noinspection PyCompatibility
-async def process_url(url, semaphore, processed_urls):
+# Функция для записи данных в CSV
+async def save_to_csv(name, sku, csv_file='products.csv'):
+    async with aiofiles.open(csv_file, mode='a', newline='') as f:
+        await f.write(f"{name},{sku}\n")
+
+
+async def process_url(url, semaphore, processed_urls, csv_file='files/added_products.csv'):
     async with semaphore:
         parser = Parser(url)
         parsed_data = await parser.parse()
@@ -36,10 +45,12 @@ async def process_url(url, semaphore, processed_urls):
         await director.build_product()
         product = builder.product
 
-        product.post()
+        await product.post()
         print(product.body["name"])
-        # processed_urls.append(url)
-        # await save_processed_urls(processed_urls)
+        await save_to_csv(product.body["name"], product.body["sku"], csv_file)
+
+        processed_urls.append(url)
+        await save_processed_urls(processed_urls)
 
 
 async def main(max_concurrent):

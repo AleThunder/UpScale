@@ -25,6 +25,7 @@ class CallMethods:
 
     async def get_name(self):
         user_prompt = f'''Название на украинском: "{self._name}"
+        sku: "{self._sku}"
     {PromptData.name_prompt}'''
         system_prompt = '''Ты переводчик текста топ уровня, твоя задача переводить текст для товаров на русский 
         якзык. В ответе не пиши ничего лишнего кроме результата работы'''
@@ -68,7 +69,10 @@ class CallMethods:
         return await self.call(system_prompt, user_prompt)
 
     async def get_specifications(self):
-        user_prompt = f'Описание товара: "{self.new_description}."\nХарактеристики на украинском: {self._specifications}.\nФото товара: {self._images[0]}\n{PromptData.specifications_prompt}.'
+        user_prompt = f'''Описание товара: "{self.new_description}."
+        Характеристики на украинском: {self._specifications}.
+        {PromptData.specifications_prompt}.
+        Модель: {self._sku}'''
         system_prompt = '''Ты менеджер онлайн магазина, твоя задача собрать характеристику о товаре на основе 
         имеющиеся информации, перевести на русский язык, и заполнить список по примеру. В ответе не пиши ничего 
         лишнего кроме результата работы в формате json, не пиши "```json```"'''
@@ -197,7 +201,7 @@ class ProductBuilder(Builder):
 
     def set_categories(self, categories=None):
         if categories is None:
-            categories = [{'id': 74}]
+            categories = [{'id': 76}]
         self._product.add(key='categories', value=categories)
 
     def set_type(self, _type="simple"):
@@ -224,7 +228,7 @@ class Product:
     def get(self, key: Text):
         return self.body[key]
 
-    def post(self):
+    async def post(self):
         try:
             response = self.wcapi.post("products", self.body)
             if response.status_code == self.HTTP_CREATED:
@@ -262,7 +266,7 @@ class Director:
     async def build_product(self) -> None:
         name, description, h2, faq, other, attributes = await self._gpt.generate()
         description = f'''{h2}{description}<h3>Часто задаваемые вопросы</h3>{faq}'''
-        meta_title, meta_description, short_description = process_other_data(other)
+        meta_title, meta_description, short_description = process_other_data(other.replace('{', '').replace('}', ''))
         meta_data = get_metadata(meta_title, meta_description)
         self.builder.set_name(name)
         self.builder.set_sku(self.builder.data['sku'])
